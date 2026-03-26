@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Missione Tastiera</title>
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111c3a; --txt:#e5e7eb; --muted:#9ca3af;
+      --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --accent:#60a5fa;
+    }
+    body{font-family:system-ui,Segoe UI,Arial; margin:0; background:linear-gradient(180deg,var(--bg),#0b1024); color:var(--txt);}
+    .wrap{max-width:980px; margin:0 auto; padding:18px;}
+    .row{display:grid; grid-template-columns: 1.2fr .8fr; gap:14px;}
+    @media (max-width:860px){ .row{grid-template-columns:1fr;} }
+    .card{background:rgba(17,28,58,.92); border:1px solid rgba(96,165,250,.25); border-radius:14px; padding:16px; box-shadow:0 10px 28px rgba(0,0,0,.35);}
+    h1{margin:0 0 10px 0; font-size:26px;}
+    h2{margin:10px 0; font-size:18px;}
+    .muted{color:var(--muted);}
+    .big{font-size:44px; font-weight:800; letter-spacing:2px;}
+    .btns{display:flex; flex-wrap:wrap; gap:10px; margin:10px 0;}
+    button{border:0; border-radius:12px; padding:10px 12px; background:rgba(96,165,250,.18); color:var(--txt); cursor:pointer; font-weight:700;}
+    button:hover{background:rgba(96,165,250,.28);}
+    button.primary{background:rgba(34,197,94,.22); border:1px solid rgba(34,197,94,.45);}
+    button.danger{background:rgba(239,68,68,.18); border:1px solid rgba(239,68,68,.35);}
+    .pill{display:inline-block; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); margin-right:8px;}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    .kbd{font-family:ui-monospace,Consolas,monospace; background:rgba(255,255,255,.08); padding:2px 7px; border-radius:8px; border:1px solid rgba(255,255,255,.15);}
+    input[type="text"]{width:100%; padding:12px; border-radius:12px; border:1px solid rgba(96,165,250,.25); background:rgba(255,255,255,.06); color:var(--txt); font-size:18px;}
+    .msg{margin-top:10px; padding:12px; border-radius:12px; border:1px dashed rgba(255,255,255,.25);}
+    .ok{border-color:rgba(34,197,94,.6); background:rgba(34,197,94,.12);}
+    .bad{border-color:rgba(239,68,68,.55); background:rgba(239,68,68,.10);}
+    .warn{border-color:rgba(245,158,11,.55); background:rgba(245,158,11,.10);}
+    .stars{font-size:22px;}
+    .footer{margin-top:12px; font-size:13px; color:var(--muted);}
+    .switch{display:flex; gap:8px; align-items:center; margin-top:8px;}
+    label{user-select:none;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🎮 Missione Tastiera</h1>
+    <p class="muted">
+      Gioco per allenare la tastiera con livelli brevi e rinforzo positivo.
+      <span class="kbd">ESC</span> = pausa &nbsp;•&nbsp; <span class="kbd">INVIO</span> = conferma
+    </p>
+
+    <div class="row">
+      <div class="card" id="mainCard">
+        <h2 id="modeTitle">Scegli una modalità</h2>
+        <div class="btns">
+          <button class="primary" onclick="setMode('hunt')">🔎 Caccia al tasto</button>
+          <button onclick="setMode('word')">🧩 Scrivi la parola</button>
+          <button onclick="setMode('phrase')">📝 Scrivi la frase</button>
+          <button class="danger" onclick="resetAll()">♻️ Reset</button>
+        </div>
+
+        <div id="gameArea">
+          <div class="msg warn">
+            Suggerimento: scegli una modalità. Per bambini con ansia da prestazione, inizia con <b>Caccia al tasto</b> e senza timer.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📊 Punteggio & impostazioni</h2>
+        <div class="grid">
+          <div><span class="pill">✅ Corretti: <b id="okCount">0</b></span></div>
+          <div><span class="pill">🔁 Tentativi: <b id="tryCount">0</b></span></div>
+          <div><span class="pill">⭐ Stelline: <b id="starCount">0</b></span></div>
+          <div><span class="pill">⏱ Tempo: <b id="timeLeft">—</b></span></div>
+        </div>
+
+        <div class="switch">
+          <input type="checkbox" id="timerOn" />
+          <label for="timerOn">Attiva timer (dolce)</label>
+        </div>
+        <div class="switch">
+          <input type="checkbox" id="soundOn" checked />
+          <label for="soundOn">Suono di rinforzo (beep leggero)</label>
+        </div>
+
+        <p class="footer">
+          Personalizzazione: puoi cambiare le liste di parole e frasi nel codice (sezione <b>PAROLE</b> e <b>FRASI</b>).
+        </p>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =======================
+   DATI PERSONALIZZABILI
+   ======================= */
+
+// PAROLE semplici (puoi sostituirle con interessi del bambino)
+const WORDS = [
+  "cane","gatto","scuola","amico","libro","mare","gioco","pizza",
+  "matita","penna","stella","computer","mouse","tastiera","umbria"
+];
+
+// FRASI brevi e funzionali (puoi adattare)
+const PHRASES = [
+  "Mi chiamo ____.",
+  "Oggi è una bella giornata.",
+  "Mi piace lavorare con calma.",
+  "Posso fare una pausa, poi riprendo.",
+  "Ho finito, controllo e consegno."
+];
+
+// Lettere facili per “caccia al tasto” (puoi aggiungere o rimuovere)
+const HUNT_KEYS = "ASDFGHJKLQWERTYUIOPZXCVBNM".split("");
+
+/* =======================
+   STATO DI GIOCO
+   ======================= */
+let mode = null;
+let currentTarget = "";
+let ok = 0, tries = 0, stars = 0;
+let timer = null;
+let seconds = 0;
+
+const okEl = document.getElementById("okCount");
+const tryEl = document.getElementById("tryCount");
+const starEl = document.getElementById("starCount");
+const timeEl = document.getElementById("timeLeft");
+const area = document.getElementById("gameArea");
+const modeTitle = document.getElementById("modeTitle");
+const timerOnEl = document.getElementById("timerOn");
+const soundOnEl = document.getElementById("soundOn");
+
+/* =======================
+   UTILITIES
+   ======================= */
+function updateScore(){
+  okEl.textContent = ok;
+  tryEl.textContent = tries;
+  starEl.textContent = stars;
+}
+
+function beep(){
+  if(!soundOnEl.checked) return;
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine"; o.frequency.value = 660;
+    g.gain.value = 0.05;
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    setTimeout(()=>{o.stop(); ctx.close();}, 120);
+  } catch(e){}
+}
+
+function setMessage(text, kind="warn"){
+  const cls = kind==="ok" ? "ok" : kind==="bad" ? "bad" : "warn";
+  return `<div class="msg ${cls}">${text}</div>`;
+}
+
+function startTimer(duration){
+  stopTimer();
+  seconds = duration;
+  timeEl.textContent = seconds + "s";
+  timer = setInterval(()=>{
+    seconds--;
+    timeEl.textContent = seconds + "s";
+    if(seconds<=0){
+      stopTimer();
+      timeEl.textContent = "0s";
+      showTimeout();
+    }
+  },1000);
+}
+
+function stopTimer(){
+  if(timer){ clearInterval(timer); timer = null; }
+  timeEl.textContent = "—";
+}
+
+function reward(){
+  // 1 stellina ogni 3 risposte corrette (prevedibile)
+  if(ok>0 && ok % 3 === 0){
+    stars++;
+    updateScore();
+    area.insertAdjacentHTML("beforeend", `<div class="msg ok"><span class="stars">⭐</span> Bravo! Hai guadagnato una stellina.</div>`);
+  }
+}
+
+/* =======================
+   MODALITÀ
+   ======================= */
+function setMode(m){
+  mode = m;
+  stopTimer();
+  if(mode==="hunt"){
+    modeTitle.textContent = "🔎 Caccia al tasto";
+    newHunt();
+  } else if(mode==="word"){
+    modeTitle.textContent = "🧩 Scrivi la parola";
+    newWord();
+  } else if(mode==="phrase"){
+    modeTitle.textContent = "📝 Scrivi la frase";
+    newPhrase();
+  }
+}
+
+function newHunt(){
+  currentTarget = HUNT_KEYS[Math.floor(Math.random()*HUNT_KEYS.length)];
+  area.innerHTML = `
+    <p class="muted">Premi il tasto richiesto sulla tastiera (senza guardare troppo lo schermo).</p>
+    <div class="big">${currentTarget}</div>
+    ${setMessage("Quando sei pronto, premi la lettera mostrata. <b>ESC</b> mette in pausa.", "warn")}
+  `;
+  if(timerOnEl.checked) startTimer(15);
+}
+
+function newWord(){
+  currentTarget = WORDS[Math.floor(Math.random()*WORDS.length)];
+  area.innerHTML = `
+    <p class="muted">Scrivi la parola esatta (poi premi <span class="kbd">INVIO</span>).</p>
+    <div class="big" style="font-size:34px">${currentTarget}</div>
+    <input id="typed" type="text" autocomplete="off" spellcheck="false" />
+    <div class="btns">
+      <button class="primary" onclick="checkTyped()">✅ Controlla</button>
+      <button onclick="newWord()">🎲 Nuova parola</button>
+    </div>
+    ${setMessage("Consiglio: vai piano e controlla. La precisione vale più della velocità.", "warn")}
+  `;
+  document.getElementById("typed").focus();
+  if(timerOnEl.checked) startTimer(25);
+}
+
+function newPhrase(){
+  currentTarget = PHRASES[Math.floor(Math.random()*PHRASES.length)];
+  area.innerHTML = `
+    <p class="muted">Scrivi la frase (puoi lasciare i trattini bassi). Poi premi <span class="kbd">INVIO</span>.</p>
+    <div style="font-size:22px; font-weight:800; margin:10px 0;">${currentTarget}</div>
+    <input id="typed" type="text" autocomplete="off" spellcheck="false" />
+    <div class="btns">
+      <button class="primary" onclick="checkTyped()">✅ Controlla</button>
+      <button onclick="newPhrase()">🎲 Nuova frase</button>
+    </div>
+    ${setMessage("Se sbagli, va bene: correggiamo e riproviamo con calma.", "warn")}
+  `;
+  document.getElementById("typed").focus();
+  if(timerOnEl.checked) startTimer(40);
+}
+
+/* =======================
+   CONTROLLI & EVENTI
+   ======================= */
+function normalize(s){
+  return (s||"").trim().toLowerCase().replace(/\s+/g," ");
+}
+
+function checkTyped(){
+  const input = document.getElementById("typed");
+  if(!input) return;
+  tries++;
+  const typed = normalize(input.value);
+  const target = normalize(currentTarget);
+  if(typed === target){
+    ok++;
+    updateScore();
+    beep();
+    stopTimer();
+    area.insertAdjacentHTML("beforeend", setMessage("✅ Perfetto! Ottimo lavoro.", "ok"));
+    reward();
+    setTimeout(()=>{ mode==="word" ? newWord() : newPhrase(); }, 900);
+  } else {
+    updateScore();
+    // feedback gentile: mostra differenza senza “errore!”
+    area.insertAdjacentHTML("beforeend", setMessage(`Quasi! Guarda con calma e correggi.<br>
+      <span class="muted">Hai scritto:</span> <b>${escapeHtml(input.value)}</b><br>
+      <span class="muted">Serve:</span> <b>${currentTarget}</b>`, "warn"));
+    input.focus();
+    input.select();
+  }
+}
+
+function showTimeout(){
+  area.insertAdjacentHTML("beforeend", setMessage("⏱ Tempo finito. Nessun problema: riproviamo con calma!", "warn"));
+  if(mode==="hunt") setTimeout(newHunt, 900);
+}
+
+function escapeHtml(str){
+  return (str||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+// Gestione tasti globali
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape"){
+    stopTimer();
+    area.insertAdjacentHTML("beforeend", setMessage("⏸ Pausa. Quando vuoi riprendere, scegli una modalità o premi un tasto.", "warn"));
+    return;
+  }
+
+  if(mode==="hunt"){
+    // accetta solo lettere A-Z
+    const k = (e.key||"").toUpperCase();
+    if(k.length===1 && k>="A" && k<="Z"){
+      tries++;
+      if(k === currentTarget){
+        ok++;
+        updateScore();
+        beep();
+        stopTimer();
+        area.insertAdjacentHTML("beforeend", setMessage(`✅ Bravo! Hai premuto <b>${k}</b>.`, "ok"));
+        reward();
+        setTimeout(newHunt, 700);
+      } else {
+        updateScore();
+        area.insertAdjacentHTML("beforeend", setMessage(`Quasi: hai premuto <b>${k}</b>. Prova ancora con calma.`, "warn"));
+      }
+    }
+  }
+
+  if((mode==="word" || mode==="phrase") && e.key === "Enter"){
+    checkTyped();
+  }
+});
+
+function resetAll(){
+  ok = 0; tries = 0; stars = 0;
+  updateScore();
+  stopTimer();
+  mode = null;
+  currentTarget = "";
+  modeTitle.textContent = "Scegli una modalità";
+  area.innerHTML = setMessage("Reset fatto. Scegli una modalità per ripartire 😊", "ok");
+}
+</script>
+</body>
+</html>
